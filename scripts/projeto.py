@@ -19,6 +19,8 @@ from geometry_msgs.msg import Twist, Vector3, Pose, Vector3Stamped
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Header
+import amarelo
+import ler_aruco
 
 print("EXECUTE ANTES da 1.a vez: ")
 print("wget https://github.com/Insper/robot21.1/raw/main/projeto/ros_projeto/scripts/MobileNetSSD_deploy.caffemodel")
@@ -33,6 +35,8 @@ cv_image = None
 media = []
 centro = []
 atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
+ang = None
+
 
 
 area = 0.0 # Variavel com a area do maior contorno
@@ -64,6 +68,7 @@ def roda_todo_frame(imagem):
     global media
     global centro
     global resultados
+    global ang
 
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
@@ -87,7 +92,11 @@ def roda_todo_frame(imagem):
 
         # Desnecessário - Hough e MobileNet já abrem janelas
         cv_image = saida_net.copy()
-        cv2.imshow("cv_image", cv_image)
+        cv_image_copy = cv_image.copy()
+        img,ang = amarelo.fazTudo(cv_image_copy)
+        img_aruco = ler_aruco.roda_aruco(cv_image)
+        print(ang)
+        cv2.imshow("cv_image", img_aruco)
         cv2.waitKey(1)
     except CvBridgeError as e:
         print('ex', e)
@@ -109,15 +118,50 @@ if __name__=="__main__":
 
     try:
         # Inicializando - por default gira no sentido anti-horário
-        vel = Twist(Vector3(0,0,0), Vector3(0,0,math.pi/10.0))
-        
-        while not rospy.is_shutdown():
-            for r in resultados:
-                print(r)
-            
-            velocidade_saida.publish(vel)
-            rospy.sleep(0.1)
+        velRoda = Twist(Vector3(0,0,0), Vector3(0,0,0.2))
+        velPara = Twist(Vector3(0,0,0), Vector3(0,0,0))
+        velFrente = Twist(Vector3(0.2,0,0), Vector3(0,0,0))
 
+
+        margin = 0
+
+        state = 0
+
+        while not rospy.is_shutdown():
+
+            if state == 0:
+                if ang is None:
+                    vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                else:
+                    if ang > 90:
+                        if ang < 150:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,-0.1))
+                        else:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+                    else:
+                        if ang > 30:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
+                        else:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+            
+            if state == 1:
+
+                if ang is None:
+                    vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
+                else:
+                    if ang > 90:
+                        if ang < 150:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
+                        else:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+                    else:
+                        if ang > 30:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,-0.1))
+                        else:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+            velocidade_saida.publish(vel)
+
+            rospy.sleep(0.1)
     except rospy.ROSInterruptException:
         print("Ocorreu uma exceção com o rospy")
 
