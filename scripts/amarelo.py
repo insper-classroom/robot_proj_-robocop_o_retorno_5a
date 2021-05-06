@@ -148,6 +148,9 @@ def fazTudo(mask):
 
     contornos = encontrar_contornos(segmenta)
 
+    if contornos == None:
+        return mask, None
+
     imagem, X, Y = encontrar_centro_dos_contornos(mask, contornos)
 
     imagem, lm= regressao_por_centro(imagem, X,Y)

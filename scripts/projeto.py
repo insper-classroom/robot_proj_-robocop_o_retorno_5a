@@ -37,6 +37,8 @@ centro = []
 atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
 ang = None
 
+dist_aruco = None
+
 
 
 area = 0.0 # Variavel com a area do maior contorno
@@ -63,12 +65,12 @@ tf_buffer = tf2_ros.Buffer()
 
 # A função a seguir é chamada sempre que chega um novo frame
 def roda_todo_frame(imagem):
-    print("frame")
     global cv_image
     global media
     global centro
     global resultados
     global ang
+    global dist_aruco
 
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
@@ -79,9 +81,10 @@ def roda_todo_frame(imagem):
         # Esta logica do delay so' precisa ser usada com robo real e rede wifi 
         # serve para descartar imagens antigas
         print("Descartando por causa do delay do frame:", delay)
-        return 
+        return
     try:
         temp_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
+        img_copy = temp_image.copy()
         # Note que os resultados já são guardados automaticamente na variável
         # chamada resultados
         centro, saida_net, resultados =  visao_module.processa(temp_image)        
@@ -94,8 +97,8 @@ def roda_todo_frame(imagem):
         cv_image = saida_net.copy()
         cv_image_copy = cv_image.copy()
         img,ang = amarelo.fazTudo(cv_image_copy)
-        img_aruco = ler_aruco.roda_aruco(cv_image)
-        print(ang)
+        img_aruco, dist_aruco = ler_aruco.roda_aruco(img_copy)
+        #print(ang)
         cv2.imshow("cv_image", img_aruco)
         cv2.waitKey(1)
     except CvBridgeError as e:
@@ -109,7 +112,7 @@ if __name__=="__main__":
     recebedor = rospy.Subscriber(topico_imagem, CompressedImage, roda_todo_frame, queue_size=4, buff_size = 2**24)
 
 
-    print("Usando ", topico_imagem)
+    #print("Usando ", topico_imagem)
 
     velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
 
@@ -129,6 +132,11 @@ if __name__=="__main__":
 
         while not rospy.is_shutdown():
 
+            print(dist_aruco)
+
+            if state == 100:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+
             if state == 0:
                 if ang is None:
                     vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
@@ -143,6 +151,13 @@ if __name__=="__main__":
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
                         else:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+                
+                if dist_aruco is not None:
+                    if dist_aruco < 105:
+                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                        state = 100
+                        
+
             
             if state == 1:
 
