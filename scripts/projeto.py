@@ -130,16 +130,34 @@ if __name__=="__main__":
 
         state = 0
 
+        time = 0
+
+        gira = False
+
         while not rospy.is_shutdown():
 
-            print(dist_aruco)
+            #print(dist_aruco)
 
             if state == 100:
-                vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                vel = Twist(Vector3(0.07,0,0), Vector3(0,0,-0.3))
+                if ang is not None:
+                    if ang < 30 or ang > 130:
+                        gira = True
+                        state = 0
+            
+
+            if state == 101:
+                rospy.sleep(2.0)
+                vel = Twist(Vector3(0.00,0,0), Vector3(0,0, 0.5))
+                if ang is not None:
+                    if ang < 40 or ang > 130:
+                        state = 0
+
+
 
             if state == 0:
                 if ang is None:
-                    vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                    vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.1))
                 else:
                     if ang > 90:
                         if ang < 150:
@@ -147,15 +165,22 @@ if __name__=="__main__":
                         else:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
                     else:
-                        if ang > 30:
+                        if ang > 35:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
                         else:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
-                
-                if dist_aruco is not None:
-                    if dist_aruco < 105:
-                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-                        state = 100
+                if not gira:
+                    if dist_aruco is not None:
+                        if dist_aruco < 105:
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                            state = 100
+                            time = 0
+                else:
+                    if dist_aruco is not None:
+                        if dist_aruco < 120:
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                            state = 101
+                            time = 0
                         
 
             
@@ -174,6 +199,13 @@ if __name__=="__main__":
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,-0.1))
                         else:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+
+                if dist_aruco is not None:
+                    if dist_aruco < 105:
+                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                        state = 100
+                        time = 0
+
             velocidade_saida.publish(vel)
 
             rospy.sleep(0.1)
