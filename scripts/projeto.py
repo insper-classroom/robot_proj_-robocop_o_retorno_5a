@@ -82,8 +82,6 @@ def recebe_odometria(data):
     angulos = np.degrees(transformations.euler_from_quaternion(lista))
     angulo = angulos[2]
 
-    if contador % pula == 0:
-        print("Posicao (x,y)  ({:.2f} , {:.2f}) + angulo {:.2f}".format(x, y,angulos[2]))
     contador = contador + 1
 
 # A função a seguir é chamada sempre que chega um novo frame
@@ -165,17 +163,21 @@ if __name__=="__main__":
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.4))
                 angulo_atual = angulo
                 if angulo_atual < 0:
-                    angulo_atual = angulo_atual + 360
+                    angulo_atual = angulo_atual + 180
 
-                if angulo_atual > angulo_inicial + 60:
+                print(angulo_atual)
+                if angulo_atual < 155:
                     state = 0
             
 
             if state == 50:
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
                 angulo_atual = angulo
+
+                print(angulo_atual)
+
                 if angulo_atual < 0:
-                    angulo_atual = angulo_atual + 360
+                    angulo_atual = angulo_atual + 180
 
                 if angulo_atual > angulo_inicial + 180:
                     state = 0
@@ -200,8 +202,9 @@ if __name__=="__main__":
                     if dist_aruco < 105:
                         vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
                         state = ids[0][0]
+                        print(state)
                         if angulo < 0:
-                            angulo_inicial = angulo + 360
+                            angulo_inicial = angulo + 180
                         else:
                             angulo_inicial = angulo 
                         
