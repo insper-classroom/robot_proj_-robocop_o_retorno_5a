@@ -36,8 +36,11 @@ media = []
 centro = []
 atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
 ang = None
+ids = []
 
 dist_aruco = None
+
+angulo_inicial = 0
 
 
 
@@ -61,7 +64,27 @@ tfl = 0
 
 tf_buffer = tf2_ros.Buffer()
 
+contador = 0
+pula = 50
+angulo = None
 
+def recebe_odometria(data):
+    global x
+    global y
+    global contador
+    global angulo
+
+    x = data.pose.pose.position.x
+    y = data.pose.pose.position.y
+
+    quat = data.pose.pose.orientation
+    lista = [quat.x, quat.y, quat.z, quat.w]
+    angulos = np.degrees(transformations.euler_from_quaternion(lista))
+    angulo = angulos[2]
+
+    if contador % pula == 0:
+        print("Posicao (x,y)  ({:.2f} , {:.2f}) + angulo {:.2f}".format(x, y,angulos[2]))
+    contador = contador + 1
 
 # A função a seguir é chamada sempre que chega um novo frame
 def roda_todo_frame(imagem):
@@ -71,6 +94,7 @@ def roda_todo_frame(imagem):
     global resultados
     global ang
     global dist_aruco
+    global ids
 
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
@@ -97,7 +121,7 @@ def roda_todo_frame(imagem):
         cv_image = saida_net.copy()
         cv_image_copy = cv_image.copy()
         img,ang = amarelo.fazTudo(cv_image_copy)
-        img_aruco, dist_aruco = ler_aruco.roda_aruco(img_copy)
+        img_aruco, dist_aruco, ids = ler_aruco.roda_aruco(img_copy)
         #print(ang)
         cv2.imshow("cv_image", img_aruco)
         cv2.waitKey(1)
@@ -110,6 +134,7 @@ if __name__=="__main__":
     topico_imagem = "/camera/image/compressed"
 
     recebedor = rospy.Subscriber(topico_imagem, CompressedImage, roda_todo_frame, queue_size=4, buff_size = 2**24)
+    ref_odometria = rospy.Subscriber("/odom", Odometry, recebe_odometria)
 
 
     #print("Usando ", topico_imagem)
@@ -132,26 +157,28 @@ if __name__=="__main__":
 
         time = 0
 
-        gira = False
-
         while not rospy.is_shutdown():
 
             #print(dist_aruco)
 
             if state == 100:
-                vel = Twist(Vector3(0.07,0,0), Vector3(0,0,-0.3))
-                if ang is not None:
-                    if ang < 30 or ang > 130:
-                        gira = True
-                        state = 0
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.4))
+                angulo_atual = angulo
+                if angulo_atual < 0:
+                    angulo_atual = angulo_atual + 360
+
+                if angulo_atual > angulo_inicial + 60:
+                    state = 0
             
 
-            if state == 101:
-                rospy.sleep(2.0)
-                vel = Twist(Vector3(0.00,0,0), Vector3(0,0, 0.5))
-                if ang is not None:
-                    if ang < 40 or ang > 130:
-                        state = 0
+            if state == 50:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
+                angulo_atual = angulo
+                if angulo_atual < 0:
+                    angulo_atual = angulo_atual + 360
+
+                if angulo_atual > angulo_inicial + 180:
+                    state = 0
 
 
 
@@ -169,18 +196,14 @@ if __name__=="__main__":
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
                         else:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
-                if not gira:
-                    if dist_aruco is not None:
-                        if dist_aruco < 105:
-                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-                            state = 100
-                            time = 0
-                else:
-                    if dist_aruco is not None:
-                        if dist_aruco < 120:
-                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-                            state = 101
-                            time = 0
+                if dist_aruco is not None:
+                    if dist_aruco < 105:
+                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                        state = ids[0][0]
+                        if angulo < 0:
+                            angulo_inicial = angulo + 360
+                        else:
+                            angulo_inicial = angulo 
                         
 
             

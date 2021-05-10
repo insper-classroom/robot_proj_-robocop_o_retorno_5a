@@ -103,4 +103,4 @@ def roda_aruco(cv_image):
         for i,j in zip(range(4),range(4,8)): cv_image = cv2.line(cv_image, tuple(imgpts[i]), tuple(imgpts[j]),(0,0,255),4);
         cv_image = cv2.drawContours(cv_image, [imgpts[4:]],-1,(0,0,255),4)
 
-    return cv_image, distEUC
+    return cv_image, distEUC, ids,
