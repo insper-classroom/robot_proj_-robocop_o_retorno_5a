@@ -76,6 +76,12 @@ def angulo_q_roda(x,y, ang):
 
     return roda
 
+def calcula_distancia(x,y):
+
+    dist = math.sqrt(pow(x,2) + pow(y,2))
+
+    return dist
+
 def recebe_odometria(data):
     global x
     global y
@@ -179,14 +185,15 @@ if __name__=="__main__":
                 angulo_atual = angulo
                 if angulo_atual < 0:
                     angulo_atual = angulo_atual + 180
-                if angulo_atual < 155 and angulo_atual > 50:
+                if angulo_atual < 155 and angulo_atual > 100:
                     state = 0
+                    print(state)
                     pos_x = x
                     pos_y = y
             
 
             if state == 50:
-                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
                 rad_atual = rad
 
                 x_conta = x - pos_x
@@ -197,6 +204,7 @@ if __name__=="__main__":
                     rad_roda = rad_roda + 2*math.pi
                 if rad > rad_roda + rad_inicial + 0.2:
                     state = 1
+                    print(state)
                     rospy.sleep(1)
             
             if state == 150:
@@ -236,7 +244,7 @@ if __name__=="__main__":
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
                 if dist_aruco is not None:
                     if dist_aruco < 105:
-                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0.0))
+                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
                         state = ids[0][0]
                         print(state)
                         if rad < 0:
@@ -248,24 +256,26 @@ if __name__=="__main__":
             
             if state == 1:
 
-                if ang is None:
-                    vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
-                else:
-                    delta_y = y-pos_y
-                    delta_x = x-pos_x
-                    rad_dir = math.atan2(delta_y, delta_x) + math.pi
-                    if rad_dir < 0:
-                        rad_dir+=math.pi*2
-                    if rad > rad_dir:
-                        vel = Twist(Vector3(0.0,0,0), Vector3(0,0,-0.1))
-                    else:
-                        vel = Twist(Vector3(0.0,0,0), Vector3(0,0,0.1))
+                delta_y = y-pos_y
+                delta_x = x-pos_x
 
-                if dist_aruco is not None:
-                    if dist_aruco < 105:
-                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-                        state = 100
-                        time = 0
+                rad_dir = math.atan2(delta_y, delta_x) + math.pi
+                    
+                if rad_dir < 0:
+                    rad_dir+=math.pi*2
+                    
+                if rad > rad_dir:
+                    vel = Twist(Vector3(0.3,0,0), Vector3(0,0,-0.1))
+                    
+                else:
+                    vel = Twist(Vector3(0.3,0,0), Vector3(0,0,0.1))
+                    
+                dist = calcula_distancia(delta_x, delta_y)
+
+                if dist < 0.2:
+                    state = 0
+                    print(state)
+
 
             velocidade_saida.publish(vel)
 
