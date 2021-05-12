@@ -37,6 +37,7 @@ centro = []
 atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
 ang = None
 ids = []
+rad = None
 
 dist_aruco = None
 
@@ -68,17 +69,27 @@ contador = 0
 pula = 50
 angulo = None
 
+def angulo_q_roda(x,y, ang):
+    angulo_trig = math.atan2(y,x)
+
+    roda = (math.pi - ang) + angulo_trig
+
+    return roda
+
 def recebe_odometria(data):
     global x
     global y
     global contador
     global angulo
+    global rad
 
     x = data.pose.pose.position.x
     y = data.pose.pose.position.y
 
     quat = data.pose.pose.orientation
     lista = [quat.x, quat.y, quat.z, quat.w]
+    rads = transformations.euler_from_quaternion(lista)
+    rad = rads[2]
     angulos = np.degrees(transformations.euler_from_quaternion(lista))
     angulo = angulos[2]
 
@@ -159,27 +170,52 @@ if __name__=="__main__":
 
             #print(dist_aruco)
 
+            if rad is not None:
+                if rad < 0:
+                    rad = rad + 2 * math.pi
+
             if state == 100:
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.4))
                 angulo_atual = angulo
                 if angulo_atual < 0:
                     angulo_atual = angulo_atual + 180
-
-                print(angulo_atual)
-                if angulo_atual < 155:
+                if angulo_atual < 155 and angulo_atual > 50:
                     state = 0
+                    pos_x = x
+                    pos_y = y
             
 
             if state == 50:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
+                rad_atual = rad
+
+                x_conta = x - pos_x
+                y_conta = y - pos_y
+
+                rad_roda = angulo_q_roda(x_conta,y_conta,rad_inicial)
+                if rad_roda < 0:
+                    rad_roda = rad_roda + 2*math.pi
+                if rad > rad_roda + rad_inicial + 0.2:
+                    state = 1
+                    rospy.sleep(1)
+            
+            if state == 150:
+
+                angulo_robo = angulo
+
+                if angulo is not None:
+                        if angulo_robo < 0:
+                            angulo_robo = angulo_robo + 360
+
+                ang_roda = angulo_q_roda(x,y,angulo_atual)
+
+                if angulo_inicial > ang_roda + angulo_robo:
+                    state = 0
+
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
                 angulo_atual = angulo
 
-                print(angulo_atual)
-
-                if angulo_atual < 0:
-                    angulo_atual = angulo_atual + 180
-
-                if angulo_atual > angulo_inicial + 180:
+                if angulo_atual < -40:
                     state = 0
 
 
@@ -200,13 +236,13 @@ if __name__=="__main__":
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
                 if dist_aruco is not None:
                     if dist_aruco < 105:
-                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0.0))
                         state = ids[0][0]
                         print(state)
-                        if angulo < 0:
-                            angulo_inicial = angulo + 180
+                        if rad < 0:
+                            rad_inicial = rad + 2*math.pi
                         else:
-                            angulo_inicial = angulo 
+                            rad_inicial = rad
                         
 
             
@@ -215,16 +251,15 @@ if __name__=="__main__":
                 if ang is None:
                     vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
                 else:
-                    if ang > 90:
-                        if ang < 150:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
-                        else:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+                    delta_y = y-pos_y
+                    delta_x = x-pos_x
+                    rad_dir = math.atan2(delta_y, delta_x) + math.pi
+                    if rad_dir < 0:
+                        rad_dir+=math.pi*2
+                    if rad > rad_dir:
+                        vel = Twist(Vector3(0.0,0,0), Vector3(0,0,-0.1))
                     else:
-                        if ang > 30:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,-0.1))
-                        else:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+                        vel = Twist(Vector3(0.0,0,0), Vector3(0,0,0.1))
 
                 if dist_aruco is not None:
                     if dist_aruco < 105:
