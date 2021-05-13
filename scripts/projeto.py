@@ -36,6 +36,12 @@ media = []
 centro = []
 atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
 ang = None
+ids = []
+rad = None
+
+dist_aruco = None
+
+angulo_inicial = 0
 
 
 
@@ -59,16 +65,51 @@ tfl = 0
 
 tf_buffer = tf2_ros.Buffer()
 
+contador = 0
+pula = 50
+angulo = None
 
+def angulo_q_roda(x,y, ang):
+    angulo_trig = math.atan2(y,x)
+
+    roda = (math.pi - ang) + angulo_trig
+
+    return roda
+
+def calcula_distancia(x,y):
+
+    dist = math.sqrt(pow(x,2) + pow(y,2))
+
+    return dist
+
+def recebe_odometria(data):
+    global x
+    global y
+    global contador
+    global angulo
+    global rad
+
+    x = data.pose.pose.position.x
+    y = data.pose.pose.position.y
+
+    quat = data.pose.pose.orientation
+    lista = [quat.x, quat.y, quat.z, quat.w]
+    rads = transformations.euler_from_quaternion(lista)
+    rad = rads[2]
+    angulos = np.degrees(transformations.euler_from_quaternion(lista))
+    angulo = angulos[2]
+
+    contador = contador + 1
 
 # A função a seguir é chamada sempre que chega um novo frame
 def roda_todo_frame(imagem):
-    print("frame")
     global cv_image
     global media
     global centro
     global resultados
     global ang
+    global dist_aruco
+    global ids
 
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
@@ -79,9 +120,10 @@ def roda_todo_frame(imagem):
         # Esta logica do delay so' precisa ser usada com robo real e rede wifi 
         # serve para descartar imagens antigas
         print("Descartando por causa do delay do frame:", delay)
-        return 
+        return
     try:
         temp_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
+        img_copy = temp_image.copy()
         # Note que os resultados já são guardados automaticamente na variável
         # chamada resultados
         centro, saida_net, resultados =  visao_module.processa(temp_image)        
@@ -94,8 +136,8 @@ def roda_todo_frame(imagem):
         cv_image = saida_net.copy()
         cv_image_copy = cv_image.copy()
         img,ang = amarelo.fazTudo(cv_image_copy)
-        img_aruco = ler_aruco.roda_aruco(cv_image)
-        print(ang)
+        img_aruco, dist_aruco, ids = ler_aruco.roda_aruco(img_copy)
+        #print(ang)
         cv2.imshow("cv_image", img_aruco)
         cv2.waitKey(1)
     except CvBridgeError as e:
@@ -107,9 +149,10 @@ if __name__=="__main__":
     topico_imagem = "/camera/image/compressed"
 
     recebedor = rospy.Subscriber(topico_imagem, CompressedImage, roda_todo_frame, queue_size=4, buff_size = 2**24)
+    ref_odometria = rospy.Subscriber("/odom", Odometry, recebe_odometria)
 
 
-    print("Usando ", topico_imagem)
+    #print("Usando ", topico_imagem)
 
     velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
 
@@ -127,38 +170,147 @@ if __name__=="__main__":
 
         state = 0
 
+        time = 0
+
         while not rospy.is_shutdown():
 
-            if state == 0:
-                if ang is None:
-                    vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-                else:
-                    if ang > 90:
-                        if ang < 150:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,-0.1))
-                        else:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
-                    else:
-                        if ang > 30:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
-                        else:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
-            
-            if state == 1:
+            #print(dist_aruco)
 
+            if rad is not None:
+                if rad < 0:
+                    rad = rad + 2 * math.pi
+
+            if state == 100:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.4))
+                angulo_atual = angulo
+                if angulo_atual < 0:
+                    angulo_atual = angulo_atual + 180
+                if angulo_atual < 155 and angulo_atual > 100:
+                    state = 0
+                    print(state)
+                    pos_x = x
+                    pos_y = y
+            
+
+            if state == 50:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
+
+                x_conta = x - pos_x
+                y_conta = y - pos_y
+
+                rad_roda = angulo_q_roda(x_conta,y_conta,rad_inicial)
+                if rad_roda < 0:
+                    rad_roda = rad_roda + 2*math.pi
+                if rad > rad_roda + rad_inicial + 0.2:
+                    state = 1
+                    print(state)
+                    rospy.sleep(1)
+            
+            if state == 150:
+
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
+               
+                x_conta = x - pos_x
+                y_conta = y - pos_y
+
+                rad_roda = angulo_q_roda(x_conta,y_conta,rad_inicial) + 2*math.pi
+                if rad_roda < 0:
+                    rad_roda = rad_roda + 2*math.pi
+
+                print(rad -(rad_roda + rad_inicial) )
+                if rad > rad_roda + rad_inicial:
+                    state = 3
+                    print(state)
+                    rospy.sleep(1)
+
+
+
+            if state == 0:
+                print(ang)
                 if ang is None:
                     vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
                 else:
                     if ang > 90:
                         if ang < 150:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
-                        else:
-                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
-                    else:
-                        if ang > 30:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,-0.1))
                         else:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+                    else:
+                        if ang > 35:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0.1))
+                        else:
+                            vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
+                if dist_aruco is not None:
+                    if dist_aruco < 105:
+                        vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                        state = ids[0][0]
+                        print(state)
+                        if rad < 0:
+                            rad_inicial = rad + 2*math.pi
+                        else:
+                            rad_inicial = rad
+                        
+
+            
+            if state == 1:
+
+                delta_y = y-pos_y
+                delta_x = x-pos_x
+
+                rad_dir = math.atan2(delta_y, delta_x) + math.pi
+                    
+                if rad_dir < 0:
+                    rad_dir+=math.pi*2
+                    
+                if rad > rad_dir:
+                    vel = Twist(Vector3(0.3,0,0), Vector3(0,0,-0.1))
+                    
+                else:
+                    vel = Twist(Vector3(0.3,0,0), Vector3(0,0,0.1))
+                    
+                dist = calcula_distancia(delta_x, delta_y)
+
+                if dist < 0.2:
+                    state = 2
+                    print(state)
+                
+            
+            if state == 3:
+
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.3))
+
+                # delta_y = y-pos_y
+                # delta_x = x-pos_x
+
+                # rad_dir = math.atan2(delta_y, delta_x) + math.pi
+                    
+                # if rad_dir < 0:
+                #     rad_dir+=math.pi*2
+                    
+                # if rad > rad_dir:
+                #     vel = Twist(Vector3(0.3,0,0), Vector3(0,0,-0.1))
+                    
+                # else:
+                #     vel = Twist(Vector3(0.3,0,0), Vector3(0,0,0.1))
+                    
+                # dist = calcula_distancia(delta_x, delta_y)
+
+                # if dist < 0.2:
+                #     state = 2
+                #     print(state)
+
+            if state == 2:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.3))
+                print(ang)
+                if ang is not None:
+                    if ang < 90:
+                        if ang < 30:
+                            state = 0
+                    else:
+                        if ang > 150:
+                            state = 0
+                            rospy.sleep(2)
+
             velocidade_saida.publish(vel)
 
             rospy.sleep(0.1)

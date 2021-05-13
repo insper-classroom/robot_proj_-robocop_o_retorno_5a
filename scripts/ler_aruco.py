@@ -38,8 +38,8 @@ def roda_aruco(cv_image):
 	
     gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-    print(ids)
-
+    distFOCO = None
+    distEUC = None
 
     if ids is not None:
         #-- ret = [rvec, tvec, ?]
@@ -54,7 +54,6 @@ def roda_aruco(cv_image):
 
         #-- Print tvec vetor de tanslação em x y z
         str_position = "Marker x=%4.0f  y=%4.0f  z=%4.0f"%(tvec[0], tvec[1], tvec[2])
-        print(str_position)
         cv2.putText(cv_image, str_position, (0, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
 
         ##############----- Referencia dos Eixos------###########################
@@ -71,8 +70,9 @@ def roda_aruco(cv_image):
 
         #-- Print distance
         str_dist = "Dist aruco=%4.0f  dis.np=%4.0f"%(distance, distancenp)
-        print(str_dist)
         cv2.putText(cv_image, str_dist, (0, 15), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
+
+        distEUC = distance
 
         #####################---- Distancia pelo foco ----#####################
         #https://www.pyimagesearch.com/2015/01/19/find-distance-camera-objectmarker-using-python-opencv/
@@ -86,10 +86,10 @@ def roda_aruco(cv_image):
         pixel_length2 = math.sqrt(math.pow(corners[0][0][2][0] - corners[0][0][3][0], 2) + math.pow(corners[0][0][2][1] - corners[0][0][3][1], 2))
         pixlength = (pixel_length1+pixel_length2)/2
         dist = marker_size * FOCAL_LENGTH / (pixlength/m)
+        distFOCO = dist
         
         #-- Print distancia focal
         str_distfocal = "Dist focal=%4.0f"%(dist)
-        print(str_distfocal)
         cv2.putText(cv_image, str_distfocal, (0, 30), font, 1, (0, 255, 0), 1, cv2.LINE_AA)	
 
 
@@ -103,5 +103,4 @@ def roda_aruco(cv_image):
         for i,j in zip(range(4),range(4,8)): cv_image = cv2.line(cv_image, tuple(imgpts[i]), tuple(imgpts[j]),(0,0,255),4);
         cv_image = cv2.drawContours(cv_image, [imgpts[4:]],-1,(0,0,255),4)
 
-        return cv_image
-
+    return cv_image, distEUC, ids,
