@@ -194,7 +194,6 @@ if __name__=="__main__":
 
             if state == 50:
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
-                rad_atual = rad
 
                 x_conta = x - pos_x
                 y_conta = y - pos_y
@@ -209,28 +208,27 @@ if __name__=="__main__":
             
             if state == 150:
 
-                angulo_robo = angulo
-
-                if angulo is not None:
-                        if angulo_robo < 0:
-                            angulo_robo = angulo_robo + 360
-
-                ang_roda = angulo_q_roda(x,y,angulo_atual)
-
-                if angulo_inicial > ang_roda + angulo_robo:
-                    state = 0
-
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
-                angulo_atual = angulo
+               
+                x_conta = x - pos_x
+                y_conta = y - pos_y
 
-                if angulo_atual < -40:
-                    state = 0
+                rad_roda = angulo_q_roda(x_conta,y_conta,rad_inicial) + 2*math.pi
+                if rad_roda < 0:
+                    rad_roda = rad_roda + 2*math.pi
+
+                print(rad -(rad_roda + rad_inicial) )
+                if rad > rad_roda + rad_inicial:
+                    state = 3
+                    print(state)
+                    rospy.sleep(1)
 
 
 
             if state == 0:
+                print(ang)
                 if ang is None:
-                    vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.1))
+                    vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
                 else:
                     if ang > 90:
                         if ang < 150:
@@ -273,9 +271,45 @@ if __name__=="__main__":
                 dist = calcula_distancia(delta_x, delta_y)
 
                 if dist < 0.2:
-                    state = 0
+                    state = 2
                     print(state)
+                
+            
+            if state == 3:
 
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.3))
+
+                # delta_y = y-pos_y
+                # delta_x = x-pos_x
+
+                # rad_dir = math.atan2(delta_y, delta_x) + math.pi
+                    
+                # if rad_dir < 0:
+                #     rad_dir+=math.pi*2
+                    
+                # if rad > rad_dir:
+                #     vel = Twist(Vector3(0.3,0,0), Vector3(0,0,-0.1))
+                    
+                # else:
+                #     vel = Twist(Vector3(0.3,0,0), Vector3(0,0,0.1))
+                    
+                # dist = calcula_distancia(delta_x, delta_y)
+
+                # if dist < 0.2:
+                #     state = 2
+                #     print(state)
+
+            if state == 2:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.3))
+                print(ang)
+                if ang is not None:
+                    if ang < 90:
+                        if ang < 30:
+                            state = 0
+                    else:
+                        if ang > 150:
+                            state = 0
+                            rospy.sleep(2)
 
             velocidade_saida.publish(vel)
 
