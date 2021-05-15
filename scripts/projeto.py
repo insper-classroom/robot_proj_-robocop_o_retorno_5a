@@ -285,21 +285,24 @@ if __name__=="__main__":
                 delta_y = y-pos_y
                 delta_x = x-pos_x
 
-                rad_dir = math.atan2(delta_y, delta_x) + math.pi
+                rad_dir = math.atan2(delta_y, delta_x)
                     
                 if rad_dir < 0:
                     rad_dir+=math.pi*2
+
+                rad_dir -= math.pi
                     
                 dist = calcula_distancia(delta_x, delta_y)
+                print(rad-rad_dir)
                 if dist > 1:
-                    if rad > rad_dir:
+                    if rad < rad_dir:
                         vel = Twist(Vector3(0.3,0,0), Vector3(0,0,0.1))
                             
                     else:
                         vel = Twist(Vector3(0.3,0,0), Vector3(0,0,-0.1))
                 
                 else:
-                    if rad > rad_dir:
+                    if rad < rad_dir:
                         vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.05))       
                     else:
                         vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.05))
@@ -309,11 +312,11 @@ if __name__=="__main__":
                         print(state)
 
             if state == 2:
-                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.3))
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.1))
                 angulo_atual = angulo
                 if angulo_atual < 0:
                     angulo_atual = angulo_atual + 180
-                if angulo_atual < 80:
+                if angulo_atual < 75:
                     state = 0
 
 
