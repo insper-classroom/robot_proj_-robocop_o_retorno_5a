@@ -225,7 +225,6 @@ if __name__=="__main__":
 
 
             if state == 0:
-                print(ang)
                 if ang is None:
                     vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
                 else:
@@ -293,7 +292,6 @@ if __name__=="__main__":
                 rad_dir -= math.pi
                     
                 dist = calcula_distancia(delta_x, delta_y)
-                print(rad-rad_dir)
                 if dist > 1:
                     if rad < rad_dir:
                         vel = Twist(Vector3(0.3,0,0), Vector3(0,0,0.1))
@@ -308,7 +306,7 @@ if __name__=="__main__":
                         vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.05))
 
                     if dist < 0.2:
-                        state = 2
+                        state = 4
                         print(state)
 
             if state == 2:
@@ -319,6 +317,11 @@ if __name__=="__main__":
                 if angulo_atual < 75:
                     state = 0
 
+            if state == 4:
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.1))
+                angulo_atual = angulo
+                if 5 > angulo_atual > -5:
+                    state = 0
 
             velocidade_saida.publish(vel)
 
