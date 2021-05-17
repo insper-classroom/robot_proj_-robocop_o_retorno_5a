@@ -166,7 +166,9 @@ if __name__=="__main__":
 
         deu_volta = False
 
-        distAruco = 105
+        distAruco = 70
+
+        distAruco_2 = 110
 
         distAruco_1 = 65
 
@@ -177,15 +179,17 @@ if __name__=="__main__":
                     rad = rad + 2 * math.pi
 
             if state == 100:
-                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.07))
                 angulo_atual = angulo
                 if angulo_atual < 0:
                     angulo_atual = angulo_atual + 180
-                if angulo_atual < 155 and angulo_atual > 100:
+                print(angulo_atual)
+                if angulo_atual < 140 and angulo_atual > 100:
                     state = 0
                     print(state)
                     pos_x = x
                     pos_y = y
+                    distAruco = distAruco_2
             
 
             if state == 50:
@@ -197,7 +201,7 @@ if __name__=="__main__":
                 rad_roda = angulo_q_roda(x_conta,y_conta,rad_inicial)
                 if rad_roda < 0:
                     rad_roda = rad_roda + 2*math.pi
-                if rad > rad_roda + rad_inicial + 0.2:
+                if rad > rad_roda + rad_inicial + 0.6:
                     state = 1
                     print(state)
                     rospy.sleep(1)
@@ -213,7 +217,7 @@ if __name__=="__main__":
                 if rad_roda < 0:
                     rad_roda = rad_roda + 2*math.pi
 
-                if rad -(rad_roda + rad_inicial) < -6.2:
+                if rad -(rad_roda + rad_inicial) < -6.6:
                     state = 3
                     print(state)
                     rospy.sleep(1)
@@ -235,7 +239,7 @@ if __name__=="__main__":
 
             if state == 0:
                 if ang is None:
-                    vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
+                    vel = Twist(Vector3(0.06,0,0), Vector3(0,0,-0.07))
                 else:
                     if ang > 90:
                         if ang < 150:
@@ -284,7 +288,7 @@ if __name__=="__main__":
                     else:
                         vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.05))
 
-                    if dist < 0.2:
+                    if dist < 0.1:
                         state = 2
                         print(state)
 
@@ -293,7 +297,8 @@ if __name__=="__main__":
                 angulo_atual = angulo
                 if angulo_atual < 0:
                     angulo_atual = angulo_atual + 180
-                if angulo_atual < 75:
+                print(angulo_atual)
+                if angulo_atual < 70:
                     state = 0
                 
             
@@ -323,13 +328,14 @@ if __name__=="__main__":
                     else:
                         vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.05))
 
-                    if dist < 0.2:
+                    if dist < 0.1:
                         state = 4
                         print(state)
 
             if state == 4:
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.1))
                 angulo_atual = angulo
+                print(angulo_atual)
                 if 5 > angulo_atual > -5:
                     distAruco = distAruco_1
                     state = 0
