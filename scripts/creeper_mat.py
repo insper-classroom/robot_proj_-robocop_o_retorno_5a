@@ -9,7 +9,7 @@ import tf
 import math
 import cv2
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import Image, CompressedImage
+from sensor_msgs.msg import Image, CompressedImage, LaserScan
 from cv_bridge import CvBridge, CvBridgeError
 from numpy import linalg
 from tf import transformations
@@ -107,6 +107,8 @@ def roda_todo_frame(imagem):
     global centro
     global resultados
     global ang
+    global dist_aruco
+    global ids
 
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
@@ -120,9 +122,10 @@ def roda_todo_frame(imagem):
         return 
     try:
         temp_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
+        img_copy = temp_image.copy()
         # Note que os resultados já são guardados automaticamente na variável
         # chamada resultados
-        media, _, _ = identifica_magenta(cv_image, azul)
+        media, _, _ = identifica_cor(cv_image, azul)
         centro, saida_net, resultados =  visao_module.processa(temp_image)        
         for r in resultados:
             # print(r) - print feito para documentar e entender
@@ -133,7 +136,7 @@ def roda_todo_frame(imagem):
         cv_image = saida_net.copy()
         cv_image_copy = cv_image.copy()
         img,ang = amarelo.fazTudo(cv_image_copy)
-        img_aruco = ler_aruco.roda_aruco(cv_image)
+        img_aruco, dist_aruco, ids = ler_aruco.roda_aruco(img_copy)
         print(ang)
         cv2.imshow("cv_image", img_aruco)
         cv2.waitKey(1)
@@ -181,10 +184,18 @@ def identifica_cor(frame, cores):
 
     return media, centro, maior_contorno_area
 
+def morpho_limpa(mask):
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(12,12))
+    mask = cv2.morphologyEx( mask, cv2.MORPH_OPEN, kernel )
+    mask = cv2.morphologyEx( mask, cv2.MORPH_CLOSE, kernel )   
+    return mask
+
 if __name__=="__main__":
     rospy.init_node("cor")
 
     topico_imagem = "/camera/image/compressed"
+
+    recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 
     recebedor = rospy.Subscriber(topico_imagem, CompressedImage, roda_todo_frame, queue_size=4, buff_size = 2**24)
     ref_odometria = rospy.Subscriber("/odom", Odometry, recebe_odometria)
@@ -250,7 +261,7 @@ if __name__=="__main__":
             
             if not stroll:
                 if not found:
-                    if distancia < 0.5:
+                    if distancia < 0.5 and ids[0][0] == 11:
                         found = True
                         find_pos = [x, y, angulo]
                 else:
