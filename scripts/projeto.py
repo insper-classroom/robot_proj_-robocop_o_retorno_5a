@@ -244,8 +244,8 @@ if __name__=="__main__":
                     print(angulo_atual)
                     if angulo_atual < 0:
                         angulo_atual = angulo_atual + 180
-                    if 100 < angulo_atual < 110:
-                        state = 4
+                    if 90 < angulo_atual < 100:
+                        state = 5
                         print(state)
                         pos_x = x
                         pos_y = y
@@ -345,8 +345,10 @@ if __name__=="__main__":
                     vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.2))
                 else:
                     if ang > 90:
-                        if ang < 160:
-                            vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.07))
+                        if ang < 130:
+                            vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.06))
+                        elif ang < 160:
+                            vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.04))
                         else:
                             vel = Twist(Vector3(0.25,0,0), Vector3(0,0,0))
                     else:
@@ -363,7 +365,20 @@ if __name__=="__main__":
                     deu_volta = True
                 if deu_volta and dist < 0.5 and -0.1 < y < 0.1:
                     vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                    state = 6
                     print("DEU A VOLTA")
+
+            if state == 6:
+                rad_dir = math.atan2(y, x) + math.pi
+                if rad - rad_dir > 0:
+                    vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.4))       
+                else:
+                    vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.4))
+                dist = calcula_distancia(x, y)
+                print(dist)
+                if dist < 0.2:
+                    print('foi')
+                    state = 0
 
             tempo2 = rospy.Time.to_sec(rospy.Time.now())
 
