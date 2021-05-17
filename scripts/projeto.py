@@ -172,6 +172,14 @@ if __name__=="__main__":
 
         time = 0
 
+        deu_volta = False
+
+        distAruco = 105
+
+        distAruco_1 = 65
+
+        distAruco = distAruco_1
+
         while not rospy.is_shutdown():
 
             #print(dist_aruco)
@@ -224,6 +232,24 @@ if __name__=="__main__":
                     rospy.sleep(1)
 
 
+            if state == 200:
+                print('tempo2: {0}'.format(tempo2))
+                if tempo2 - tempo < 3:
+                    print('um pouco mais')
+                    vel = Twist(Vector3(0.05,0,0), Vector3(0,0,0))
+                else:
+                    print('gira')
+                    vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.4))
+                    angulo_atual = angulo
+                    print(angulo_atual)
+                    if angulo_atual < 0:
+                        angulo_atual = angulo_atual + 180
+                    if 100 < angulo_atual < 110:
+                        state = 4
+                        print(state)
+                        pos_x = x
+                        pos_y = y
+                
 
             if state == 0:
                 print(ang)
@@ -241,10 +267,12 @@ if __name__=="__main__":
                         else:
                             vel = Twist(Vector3(0.4,0,0), Vector3(0,0,0))
                 if dist_aruco is not None:
-                    if dist_aruco < 105:
+                    if dist_aruco < distAruco:
                         vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
                         state = ids[0][0]
                         print(state)
+                        tempo = rospy.Time.to_sec(rospy.Time.now())
+                        print('tempo: {0}'.format(tempo))
                         if rad < 0:
                             rad_inicial = rad + 2*math.pi
                         else:
@@ -310,6 +338,34 @@ if __name__=="__main__":
                         if ang > 150:
                             state = 0
                             rospy.sleep(2)
+
+            if state == 5:
+                print(ang)
+                if ang is None:
+                    vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.2))
+                else:
+                    if ang > 90:
+                        if ang < 160:
+                            vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.07))
+                        else:
+                            vel = Twist(Vector3(0.25,0,0), Vector3(0,0,0))
+                    else:
+                        if ang > 20:
+                            vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.07))
+                        else:
+                            vel = Twist(Vector3(0.25,0,0), Vector3(0,0,0))
+                
+                delta_y = y-pos_y
+                delta_x = x-pos_x
+                dist = calcula_distancia(delta_x, delta_y)
+                
+                if dist > 2:
+                    deu_volta = True
+                if deu_volta and dist < 0.5 and -0.1 < y < 0.1:
+                    vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                    print("DEU A VOLTA")
+
+            tempo2 = rospy.Time.to_sec(rospy.Time.now())
 
             velocidade_saida.publish(vel)
 
