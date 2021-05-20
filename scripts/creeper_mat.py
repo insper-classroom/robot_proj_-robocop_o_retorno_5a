@@ -59,9 +59,9 @@ tfl = 0
 
 tf_buffer = tf2_ros.Buffer()
 
-azul = [np.array([105, 200, 100]), np.array([135, 255, 255])]
-verde = [np.array([45, 255, 255]), np.array([75, 255, 255])]
-yellow = [np.array([10, 255, 255]), np.array([35, 255, 255])]
+ciano = [[np.array([75, 200, 100]), np.array([90, 255, 255])], [np.array([90, 200, 100]), np.array([105, 255, 255])]]
+verde = [[np.array([45, 255, 255]), np.array([60, 255, 255])], [np.array([60, 255, 255]), np.array([75, 255, 255])]]
+vermelho = [[np.array([0, 255, 255]), np.array([15, 255, 255])], [np.array([165, 255, 255]), np.array([180, 255, 255])]]
 
 media = [10000,0]
 
@@ -109,6 +109,7 @@ def roda_todo_frame(imagem):
     global ang
     global dist_aruco
     global ids
+    global maior_contorno_area
 
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
@@ -125,7 +126,7 @@ def roda_todo_frame(imagem):
         img_copy = temp_image.copy()
         # Note que os resultados já são guardados automaticamente na variável
         # chamada resultados
-        media, _, _ = identifica_cor(cv_image, azul)
+        media, _, maior_contorno_area = identifica_cor(cv_image, ciano)
         centro, saida_net, resultados =  visao_module.processa(temp_image)        
         for r in resultados:
             # print(r) - print feito para documentar e entender
@@ -146,9 +147,11 @@ def roda_todo_frame(imagem):
 def identifica_cor(frame, cores):
     frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    cor_menor = cores[0]
-    cor_maior = cores[1]
-    segmentado_cor = cv2.inRange(frame_hsv, cor_menor, cor_maior)
+    cor_menor0 = cores[0][0]
+    cor_maior0 = cores[0][1]
+    cor_menor1 = cores[1][0]
+    cor_maior1 = cores[1][1]
+    segmentado_cor = cv2.inRange(frame_hsv, cor_menor0, cor_maior0) + cv2.inRange(frame_hsv, cor_menor1, cor_maior1)
 
     centro = (frame.shape[1]//2, frame.shape[0]//2)
 
@@ -261,18 +264,19 @@ if __name__=="__main__":
             
             if not stroll:
                 if not found:
-                    if distancia < 0.5 and ids[0][0] == 11:
+                    print(maior_contorno_area)
+                    if maior_contorno_area > 200 and ids[0][0] == 11:
                         found = True
                         find_pos = [x, y, angulo]
                 else:
                     if not para:
-                        if distancia < 0.1:
+                        if maior_contorno_area > 50:
                             para = True
                         if (media[0] > centro[0]):
                             vel = Twist(Vector3(0.07,0,0), Vector3(0,0,-0.1))
                         elif (media[0] < centro[0]):
                             vel = Twist(Vector3(0.07,0,0), Vector3(0,0,0.1))
-                    elif distancia < 0.09:
+                    elif maior_contorno_area > 60:
                         vel = Twist(Vector3(-0.01,0,0), Vector3(0,0,0))
                     else:
                         if centro[0] - 5 < media[0] < centro[0] + 5:
@@ -284,8 +288,10 @@ if __name__=="__main__":
                             elif (media[0] < centro[0]):
                                 vel = Twist(Vector3(0,0,0), Vector3(0,0,0.05))
                 if catch == 1:
+                    print('a')
                     # codigo para a garra pegar
                 elif catch == 2:
+                    print('b')
                     # codigo para o robo voltar
                         
 
