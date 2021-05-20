@@ -44,8 +44,6 @@ dist_aruco = None
 
 angulo_inicial = 0
 
-
-
 area = 0.0 # Variavel com a area do maior contorno
 
 # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados. 
@@ -398,43 +396,94 @@ if __name__=="__main__":
                     vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
                     print("DEU A VOLTA")
 
+            if state == 11:
+
+                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
+
+                x_conta = x - find_pos[0]
+                y_conta = y - find_pos[1]
+
+                rad_roda = angulo_q_roda(x_conta,y_conta,find_pos[2])
+                if rad_roda < 0:
+                    rad_roda = rad_roda + 2*math.pi
+                print(rad - (rad_roda + find_pos[2]))
+                if rad > rad_roda + find_pos[2] + 0.6:
+                    state = 12
+                    print(state)
+                    rospy.sleep(1)
+
+            if state == 12:
+
+                delta_y = y-find_pos[1]
+                delta_x = x-find_pos[0]
+
+                rad_dir = math.atan2(delta_y, delta_x)
+                    
+                if rad_dir < 0:
+                    rad_dir += math.pi*2
+                    
+                dist = calcula_distancia(delta_x, delta_y)
+                print(rad - rad_dir)
+                if dist > 1:
+                    if rad > rad_dir:
+                        vel = Twist(Vector3(0.3,0,0), Vector3(0,0,-0.1))
+                            
+                    else:
+                        vel = Twist(Vector3(0.3,0,0), Vector3(0,0,0.1))
+                
+                else:
+                    if rad > rad_dir:
+                        vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.05))       
+                    else:
+                        vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.05))
+
+                    if dist < 0.3:
+                        print(rad)
+                        if rad > 0:
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0.05))  
+                        else:
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.05)) 
+
             if not stroll:
                 if not found:
                     print(maior_contorno_area)
                     if maior_contorno_area > 1100:
+                        state = 13
                         found = True
                         find_pos = [x, y, angulo]
+                        print(state)
+
+            if state == 13:
+                print(dist_aruco)
+                if not para:
+                    if dist_aruco is not None:
+                        if dist_aruco < 100 and ids[0][0] == 12:
+                            para = True
+                        if (media[0] > centro[0]):
+                            vel = Twist(Vector3(0.15,0,0), Vector3(0,0,-0.15))
+                        elif (media[0] < centro[0]):
+                            vel = Twist(Vector3(0.15,0,0), Vector3(0,0,0.15))
+
+                    # elif dist_aruco < 20:
+                    #     vel = Twist(Vector3(-0.01,0,0), Vector3(0,0,0))
                 else:
-                    state = ids[0][0]
-                    print(dist_aruco)
-                    if not para:
-                        if dist_aruco is not None:
-                            if dist_aruco < 30:
-                                para = True
-                            if (media[0] > centro[0]):
-                                vel = Twist(Vector3(0.15,0,0), Vector3(0,0,-0.15))
-                            elif (media[0] < centro[0]):
-                                vel = Twist(Vector3(0.15,0,0), Vector3(0,0,0.15))
-                    elif dist_aruco < 20:
-                        vel = Twist(Vector3(-0.01,0,0), Vector3(0,0,0))
-                    else:
-                        if centro[0] - 5 < media[0] < centro[0] + 5:
-                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-                            catch = 1
-                        else:
-                            if (media[0] > centro[0]):
-                                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.05))
-                            elif (media[0] < centro[0]):
-                                vel = Twist(Vector3(0,0,0), Vector3(0,0,0.05))
-                if catch == 1:
-                    print('a')
-                    # codigo para a garra pegar
-                elif catch == 2:
-                    print('b')
-                    # codigo para o robo voltar
+                    # if centro[0] - 5 < media[0] < centro[0] + 5:
+                        # vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                    state = 11
+                    print(state)
+                    # else:
+                        # if (media[0] > centro[0]):
+                            # vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.05))
+                        # elif (media[0] < centro[0]):
+                            # vel = Twist(Vector3(0,0,0), Vector3(0,0,0.05))
+                # if catch == 1:
+                #     print('a')
+                #     # codigo para a garra pegar
+                # elif catch == 2:
+                #     print('b')
+                #     # codigo para o robo voltar
 
             tempo2 = rospy.Time.to_sec(rospy.Time.now())
-
             velocidade_saida.publish(vel)
 
             rospy.sleep(0.1)
