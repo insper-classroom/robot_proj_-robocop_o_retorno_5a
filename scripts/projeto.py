@@ -183,7 +183,6 @@ if __name__=="__main__":
                 angulo_atual = angulo
                 if angulo_atual < 0:
                     angulo_atual = angulo_atual + 180
-                print(angulo_atual)
                 if angulo_atual < 140 and angulo_atual > 100:
                     state = 0
                     print(state)
@@ -288,7 +287,7 @@ if __name__=="__main__":
                     else:
                         vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.05))
 
-                    if dist < 0.1:
+                    if dist < 0.3:
                         state = 2
                         print(state)
 
@@ -333,12 +332,27 @@ if __name__=="__main__":
                         print(state)
 
             if state == 4:
-                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.1))
+                vel = Twist(Vector3(0.01,0,0), Vector3(0,0,-0.05))
                 angulo_atual = angulo
-                print(angulo_atual)
-                if 5 > angulo_atual > -5:
+                if 2 > angulo_atual > -2:
+                    rospy.sleep(2)
                     distAruco = distAruco_1
                     state = 0
+            
+            if state == 10:
+                    
+                dist = calcula_distancia(x, y)
+                if rad < 0:
+                    vel = Twist(Vector3(0.05,0,0), Vector3(0,0,0.05))
+                        
+                else:
+                    vel = Twist(Vector3(0.05,0,0), Vector3(0,0,-0.05))
+                
+
+                if dist < 0.05:
+                    state = 0
+                    print(state)
+
 
             if state == 5:
                 print(ang)
