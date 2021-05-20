@@ -27,6 +27,7 @@ print("wget https://github.com/Insper/robot21.1/raw/main/projeto/ros_projeto/scr
 print("PARA TER OS PESOS DA REDE NEURAL")
 
 import visao_module
+import segmenta_cor
 
 
 bridge = CvBridge()
@@ -57,6 +58,16 @@ x = 0
 y = 0
 z = 0
 id = 0
+
+ciano = [[(75, 50, 50),(90, 255, 255)], [(90, 50, 50),(105, 255, 255)]]
+verde = [[(45, 50, 50),(60, 255, 255)], [(60, 50, 50),(75, 255, 255)]]
+vermelho = [[(0, 50, 50),(25, 255, 255)], [(150, 50, 50),(180, 255, 255)]]
+
+media = [10000,0]
+
+maior_contorno_area = 0
+
+distancia = 50
 
 frame = "camera_link"
 # frame = "head_camera"  # DESCOMENTE para usar com webcam USB via roslaunch tag_tracking usbcam
@@ -110,6 +121,7 @@ def roda_todo_frame(imagem):
     global ang
     global dist_aruco
     global ids
+    global maior_contorno_area
 
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
@@ -134,6 +146,7 @@ def roda_todo_frame(imagem):
 
         # Desnecessário - Hough e MobileNet já abrem janelas
         cv_image = saida_net.copy()
+        media, _, maior_contorno_area = segmenta_cor.identifica_cor(cv_image, ciano)
         cv_image_copy = cv_image.copy()
         img,ang = amarelo.fazTudo(cv_image_copy)
         img_aruco, dist_aruco, ids = ler_aruco.roda_aruco(img_copy)
@@ -150,7 +163,6 @@ if __name__=="__main__":
 
     recebedor = rospy.Subscriber(topico_imagem, CompressedImage, roda_todo_frame, queue_size=4, buff_size = 2**24)
     ref_odometria = rospy.Subscriber("/odom", Odometry, recebe_odometria)
-
 
     #print("Usando ", topico_imagem)
 
@@ -169,6 +181,12 @@ if __name__=="__main__":
         distAruco = 105
 
         distAruco_1 = 65
+
+        stroll = False
+        found = False
+        find_pos = [0,0,0]
+        para = False
+        catch = 0
 
         while not rospy.is_shutdown():
 
@@ -359,6 +377,41 @@ if __name__=="__main__":
                 if deu_volta and dist < 0.5 and -0.1 < y < 0.1:
                     vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
                     print("DEU A VOLTA")
+
+            if not stroll:
+                if not found:
+                    print(maior_contorno_area)
+                    if maior_contorno_area > 1100:
+                        found = True
+                        find_pos = [x, y, angulo]
+                else:
+                    state = ids[0][0]
+                    print(dist_aruco)
+                    if not para:
+                        if dist_aruco is not None:
+                            if dist_aruco < 30:
+                                para = True
+                            if (media[0] > centro[0]):
+                                vel = Twist(Vector3(0.15,0,0), Vector3(0,0,-0.15))
+                            elif (media[0] < centro[0]):
+                                vel = Twist(Vector3(0.15,0,0), Vector3(0,0,0.15))
+                    elif dist_aruco < 20:
+                        vel = Twist(Vector3(-0.01,0,0), Vector3(0,0,0))
+                    else:
+                        if centro[0] - 5 < media[0] < centro[0] + 5:
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                            catch = 1
+                        else:
+                            if (media[0] > centro[0]):
+                                vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.05))
+                            elif (media[0] < centro[0]):
+                                vel = Twist(Vector3(0,0,0), Vector3(0,0,0.05))
+                if catch == 1:
+                    print('a')
+                    # codigo para a garra pegar
+                elif catch == 2:
+                    print('b')
+                    # codigo para o robo voltar
 
             tempo2 = rospy.Time.to_sec(rospy.Time.now())
 
