@@ -1,6 +1,6 @@
 # Base para Projeto 1 - Robótica 
 
-Nome do grupo: Robocop o retorno
+Nome do grupo: Robocop, o retorno
 
 ____________
 
@@ -9,6 +9,10 @@ Nome dos integrantes:
 * Luca Coutinho Melão
 * Matheus Kwon
 * Paulo Souza Chade
+
+Link do vídeo com comprovação para o conceito C:
+
+https://youtu.be/hOTgqA7PF8g
 
 Visite sempre o enunciado abaixo para atualizacões: 
 
