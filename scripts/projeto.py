@@ -59,7 +59,7 @@ id = 0
 
 ciano = [[(75, 50, 50),(90, 255, 255)], [(90, 50, 50),(105, 255, 255)]]
 verde = [[(45, 50, 50),(60, 255, 255)], [(60, 50, 50),(75, 255, 255)]]
-vermelho = [[(0, 50, 50),(25, 255, 255)], [(150, 50, 50),(180, 255, 255)]]
+vermelho = [[(0, 150, 150),(25, 255, 255)], [(150, 150, 150),(180, 255, 255)]]
 
 media = [10000,0]
 
@@ -183,6 +183,9 @@ if __name__=="__main__":
         find_pos = [0,0,0]
         para = False
         catch = 0
+
+        pos_x = 0
+        pos_y = 0
 
         while not rospy.is_shutdown():
 
@@ -367,7 +370,7 @@ if __name__=="__main__":
 
 
             if state == 5:
-                print(ang)
+                # print(ang)
                 if ang is None:
                     vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.2))
                 else:
@@ -398,11 +401,13 @@ if __name__=="__main__":
                 angulo_atual = angulo
 
                 if angulo_atual < 0:
-                    angulo_atual += 360
+                    angulo_atual += 180
+                else:
+                    angulo_atual -= 180
                 
                 print("angulo_atual: {0}".format(angulo_atual))
                 
-                if front_ang - 7 < angulo_atual < front_ang + 7:
+                if front_ang - 5 < angulo_atual < front_ang + 5:
                     state = 12
                     print(state)
 
@@ -449,7 +454,7 @@ if __name__=="__main__":
             if not stroll:
                 if not found:
                     print(maior_contorno_area)
-                    if maior_contorno_area > 1100:
+                    if maior_contorno_area > 1000:
                         state = 13
                         found = True
                         stroll = True
@@ -471,8 +476,10 @@ if __name__=="__main__":
                             vel = Twist(Vector3(0.15,0,0), Vector3(0,0,0.15))
                 else:
                     angulo_atual = angulo
-                    if angulo_atual < 0:
-                        angulo_atual = 180 + angulo
+                    # if angulo_atual < 0:
+                    #     angulo_atual += 180
+                    # else:
+                    #     angulo_atual -= 180
                     front_ang = angulo_atual
                     print("front_ang: {0}".format(front_ang))
                     state = 11
