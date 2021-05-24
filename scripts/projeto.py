@@ -80,15 +80,11 @@ angulo = None
 
 def angulo_q_roda(x,y, ang):
     angulo_trig = math.atan2(y,x)
-
     roda = (math.pi - ang) + angulo_trig
-
     return roda
 
 def calcula_distancia(x,y):
-
     dist = math.sqrt(pow(x,2) + pow(y,2))
-
     return dist
 
 def recebe_odometria(data):
@@ -399,18 +395,16 @@ if __name__=="__main__":
             if state == 11:
 
                 vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
+                angulo_atual = angulo
 
-                x_conta = x - find_pos[0]
-                y_conta = y - find_pos[1]
-
-                rad_roda = angulo_q_roda(x_conta,y_conta,find_pos[2])
-                if rad_roda < 0:
-                    rad_roda = rad_roda + 2*math.pi
-                print(rad - (rad_roda + find_pos[2]))
-                if rad > rad_roda + find_pos[2] + 0.6:
+                if angulo_atual < 0:
+                    angulo_atual += 360
+                
+                print("angulo_atual: {0}".format(angulo_atual))
+                
+                if front_ang - 7 < angulo_atual < front_ang + 7:
                     state = 12
                     print(state)
-                    rospy.sleep(1)
 
             if state == 12:
 
@@ -420,10 +414,14 @@ if __name__=="__main__":
                 rad_dir = math.atan2(delta_y, delta_x)
                     
                 if rad_dir < 0:
-                    rad_dir += math.pi*2
-                    
+                    rad_dir += math.pi
+                else:
+                    rad_dir -= math.pi
+
                 dist = calcula_distancia(delta_x, delta_y)
-                print(rad - rad_dir)
+                print("dist: {0}".format(dist))
+                print("rad_dir: {0}".format(rad_dir))
+                print("rad: {0}".format(rad))
                 if dist > 1:
                     if rad > rad_dir:
                         vel = Twist(Vector3(0.3,0,0), Vector3(0,0,-0.1))
@@ -433,16 +431,20 @@ if __name__=="__main__":
                 
                 else:
                     if rad > rad_dir:
-                        vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.05))       
+                        vel = Twist(Vector3(0.1,0,0), Vector3(0,0,-0.05))
                     else:
                         vel = Twist(Vector3(0.1,0,0), Vector3(0,0,0.05))
 
                     if dist < 0.3:
                         print(rad)
-                        if rad > 0:
-                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0.05))  
+                        if rad > math.pi:
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
                         else:
-                            vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.05)) 
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0.2))
+                        if math.pi-0.1 < rad < math.pi+0.1:
+                            vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                            state = 0
+                            print(state)
 
             if not stroll:
                 if not found:
@@ -450,7 +452,11 @@ if __name__=="__main__":
                     if maior_contorno_area > 1100:
                         state = 13
                         found = True
-                        find_pos = [x, y, angulo]
+                        stroll = True
+                        angulo_atual = angulo
+                        if angulo_atual < 0:
+                            angulo_atual = 180 + angulo
+                        find_pos = [x, y, angulo_atual]
                         print(state)
 
             if state == 13:
@@ -463,25 +469,14 @@ if __name__=="__main__":
                             vel = Twist(Vector3(0.15,0,0), Vector3(0,0,-0.15))
                         elif (media[0] < centro[0]):
                             vel = Twist(Vector3(0.15,0,0), Vector3(0,0,0.15))
-
-                    # elif dist_aruco < 20:
-                    #     vel = Twist(Vector3(-0.01,0,0), Vector3(0,0,0))
                 else:
-                    # if centro[0] - 5 < media[0] < centro[0] + 5:
-                        # vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+                    angulo_atual = angulo
+                    if angulo_atual < 0:
+                        angulo_atual = 180 + angulo
+                    front_ang = angulo_atual
+                    print("front_ang: {0}".format(front_ang))
                     state = 11
                     print(state)
-                    # else:
-                        # if (media[0] > centro[0]):
-                            # vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.05))
-                        # elif (media[0] < centro[0]):
-                            # vel = Twist(Vector3(0,0,0), Vector3(0,0,0.05))
-                # if catch == 1:
-                #     print('a')
-                #     # codigo para a garra pegar
-                # elif catch == 2:
-                #     print('b')
-                #     # codigo para o robo voltar
 
             tempo2 = rospy.Time.to_sec(rospy.Time.now())
             velocidade_saida.publish(vel)
