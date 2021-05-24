@@ -437,11 +437,11 @@ if __name__=="__main__":
 
                     if dist < 0.3:
                         print(rad)
-                        if rad > math.pi:
+                        if rad > find_pos[2]:
                             vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
                         else:
                             vel = Twist(Vector3(0,0,0), Vector3(0,0,0.2))
-                        if math.pi-0.1 < rad < math.pi+0.1:
+                        if find_pos[2]-0.1 < rad < find_pos[2]+0.1:
                             vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
                             state = 0
                             print(state)
@@ -453,10 +453,10 @@ if __name__=="__main__":
                         state = 13
                         found = True
                         stroll = True
-                        angulo_atual = angulo
-                        if angulo_atual < 0:
-                            angulo_atual = 180 + angulo
-                        find_pos = [x, y, angulo_atual]
+                        rad_atual = rad
+                        if rad_atual < 0:
+                            rad_atual = 180 + rad
+                        find_pos = [x, y, rad_atual]
                         print(state)
 
             if state == 13:
