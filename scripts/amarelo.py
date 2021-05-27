@@ -64,8 +64,13 @@ def center_of_mass(data):
     """ Retorna uma tupla (cx, cy) que desenha o centro de data, que pode ser contorno ou matriz"""
     M = cv2.moments(data)
     # Usando a expressão do centróide definida em: https://en.wikipedia.org/wiki/Image_moment
-    cX = int(M["m10"] / M["m00"])
-    cY = int(M["m01"] / M["m00"])
+    if M["m00"] == 0:
+        m00 = 1
+    else:
+        m00 = M["m00"]
+
+    cX = int(M["m10"] / m00)
+    cY = int(M["m01"] / m00)
     return (int(cX), int(cY))
 
 def encontrar_centro_dos_contornos(img, contornos):
@@ -147,6 +152,9 @@ def fazTudo(mask):
     segmenta = segmenta_linha_amarela(mask)
 
     contornos = encontrar_contornos(segmenta)
+
+    if len(contornos) < 2:
+        return mask, None
 
     imagem, X, Y = encontrar_centro_dos_contornos(mask, contornos)
 
