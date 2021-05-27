@@ -10,9 +10,15 @@ Nome dos integrantes:
 * Matheus Kwon
 * Paulo Souza Chade
 
-Link do vídeo com comprovação para o conceito C:
+Links dos vídeos com comprovação para o conceito C:
 
 https://youtu.be/hOTgqA7PF8g
+
+https://youtu.be/3KN5CztSBXE
+
+https://youtu.be/aE3swLze6ss
+
+https://youtu.be/qjvgXEPl8uc
 
 Visite sempre o enunciado abaixo para atualizacões: 
 
